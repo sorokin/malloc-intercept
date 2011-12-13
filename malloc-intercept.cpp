@@ -31,9 +31,9 @@ namespace
     {
         void* ptr = mmap(NULL, size + DATA_OFFSET, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-        if (!ptr)
+        if (ptr == NULL)
             return NULL;
-        
+
         block_header* blk = (block_header*)ptr;
         blk->size = size;
         blk->magic = BLOCK_MAGIC;
@@ -57,8 +57,30 @@ namespace
 
     void internal_free(void* ptr)
     {
+        if (ptr == NULL)
+            return;
+
         block_header* blk = block_by_ptr(ptr);
         munmap(blk, blk->size + DATA_OFFSET);
+    }
+
+    void* internal_realloc(void *ptr, size_t size)
+    {
+        if (ptr == NULL)
+            return malloc(size);
+
+        void* new_data = internal_alloc(size);
+        if (new_data == NULL)
+            return NULL;
+
+        block_header* old_blk = block_by_ptr(ptr);
+
+        size_t size_to_copy = size < old_blk->size ? size : old_blk->size;
+        memcpy(new_data, ptr, size_to_copy);
+
+        internal_free(ptr);
+
+        return new_data;
     }
 }
 
@@ -87,30 +109,15 @@ void free(void *ptr)
 {
     fprintf(stderr, "free %p\n", ptr);
 
-    if (ptr == NULL)
-        return;
-
     internal_free(ptr);
 }
 
 extern "C"
 void* realloc(void *ptr, size_t size)
 {
-    if (ptr == NULL)
-        return malloc(size);
-    
-    void* new_data = internal_alloc(size);
-    if (new_data == NULL)
-        return NULL;
+    void* p = internal_realloc(ptr, size);
 
-    fprintf(stderr, "realloc %p %zu %p\n", ptr, size, new_data);
+    fprintf(stderr, "realloc %p %zu %p\n", ptr, size, p);
 
-    block_header* old_blk = block_by_ptr(ptr);
-
-    size_t size_to_copy = size < old_blk->size ? size : old_blk->size;
-    memcpy(new_data, ptr, size_to_copy);
-
-    internal_free(ptr);
-
-    return new_data;
+    return p;
 }
