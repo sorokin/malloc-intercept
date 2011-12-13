@@ -1,8 +1,9 @@
 
-// compile:        g++ -nostartfiles --shared -fPIC -g -ldl -o malloc-intercept.so malloc-intercept.cpp
-// run (trace):    LD_PRELOAD=./malloc-intercept.so kreversi
-// run (no trace): LD_PRELOAD=./malloc-intercept.so MALLOC_INTERCEPT_NO_TRACE=1 kreversi
-// view symbols:   objdump -t --demangle malloc-intercept.so
+// compile (debug):   g++ --shared -fPIC -g -o malloc-intercept.so malloc-intercept.cpp
+// compile (release): g++ --shared -fPIC -O2 -o malloc-intercept.so malloc-intercept.cpp
+// run (trace):       LD_PRELOAD=./malloc-intercept.so kreversi
+// run (no trace):    LD_PRELOAD=./malloc-intercept.so MALLOC_INTERCEPT_NO_TRACE=1 kreversi
+// view symbols:      objdump -t --demangle malloc-intercept.so
 
 #include <cstring>
 
@@ -69,7 +70,7 @@ namespace
     void* internal_realloc(void *ptr, size_t size)
     {
         if (ptr == NULL)
-            return malloc(size);
+            return internal_alloc(size);
 
         void* new_data = internal_alloc(size);
         if (new_data == NULL)
