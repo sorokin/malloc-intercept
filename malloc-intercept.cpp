@@ -100,6 +100,9 @@ void* malloc(size_t size)
     void *p = internal_alloc(size);
 
     if (trace_enabled())
+        // its generally bad idea to call I/O function from malloc
+        // if they call malloc we will end up with an infinite recursion...
+        // with glibc we are lucky though
         std::cerr << "malloc " << size << " " << p << "\n";
 
     return p;
