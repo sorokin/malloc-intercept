@@ -1,11 +1,13 @@
 
-// compile:      g++ -nostartfiles --shared -fPIC -g -ldl -o malloc-intercept.so malloc-intercept.cpp
-// run:          LD_PRELOAD=./malloc-intercept.so kreversi
-// view symbols: objdump -t --demangle malloc-intercept.so
+// compile:        g++ -nostartfiles --shared -fPIC -g -ldl -o malloc-intercept.so malloc-intercept.cpp
+// run (trace):    LD_PRELOAD=./malloc-intercept.so kreversi
+// run (no trace): LD_PRELOAD=./malloc-intercept.so MALLOC_INTERCEPT_NO_TRACE=1 kreversi
+// view symbols:   objdump -t --demangle malloc-intercept.so
 
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
+
+#include <algorithm>
+#include <iostream>
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -48,8 +50,8 @@ namespace
 
         if (blk->magic != BLOCK_MAGIC)
         {
-            fprintf(stderr, "bad magic!\n");
-            _exit(1);
+            std::cerr << "bad magic in block " << p << "\n";
+            std::abort();
         }
 
         return blk;
@@ -75,12 +77,17 @@ namespace
 
         block_header* old_blk = block_by_ptr(ptr);
 
-        size_t size_to_copy = size < old_blk->size ? size : old_blk->size;
-        memcpy(new_data, ptr, size_to_copy);
+        memcpy(new_data, ptr, std::min(size, old_blk->size));
 
         internal_free(ptr);
 
         return new_data;
+    }
+
+    bool trace_enabled()
+    {
+        static bool enabled = (getenv("MALLOC_INTERCEPT_NO_TRACE") == NULL);
+        return enabled;
     }
 }
 
@@ -89,17 +96,19 @@ void* malloc(size_t size)
 {
     void *p = internal_alloc(size);
 
-    fprintf(stderr, "malloc %zu %p\n", size, p);
+    if (trace_enabled())
+        std::cerr << "malloc " << size << " " << p << "\n";
 
     return p;
 }
 
 extern "C"
-void* calloc(size_t nmemb, size_t size)
+void* calloc(size_t n, size_t size)
 {
-    void* p = internal_alloc(nmemb * size);
+    void* p = internal_alloc(n * size);
 
-    fprintf(stderr, "calloc %zu %zu %p\n", nmemb, size, p);
+    if (trace_enabled())
+        std::cerr << "calloc " << n << " " << size << " " << p << "\n";
 
     return p;
 }
@@ -107,9 +116,10 @@ void* calloc(size_t nmemb, size_t size)
 extern "C"
 void free(void *ptr)
 {
-    fprintf(stderr, "free %p\n", ptr);
-
     internal_free(ptr);
+
+    if (trace_enabled())
+        std::cerr << "free " << ptr << "\n";
 }
 
 extern "C"
@@ -117,7 +127,8 @@ void* realloc(void *ptr, size_t size)
 {
     void* p = internal_realloc(ptr, size);
 
-    fprintf(stderr, "realloc %p %zu %p\n", ptr, size, p);
+    if (trace_enabled())
+        std::cerr << "realloc " << ptr << " " << size << " " << p << "\n";
 
     return p;
 }
