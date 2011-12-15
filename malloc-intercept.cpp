@@ -4,11 +4,10 @@
 // run (no trace):    LD_PRELOAD=./malloc-intercept.so MALLOC_INTERCEPT_NO_TRACE=1 kreversi
 // view symbols:      objdump -t --demangle malloc-intercept.so
 
-
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
-#include <iostream>
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -52,7 +51,7 @@ namespace
 
         if (blk->magic != BLOCK_MAGIC)
         {
-            std::cerr << "bad magic in block " << p << "\n";
+            fprintf(stderr, "bad magic in block %p\n", p);
             std::abort();
         }
 
@@ -102,8 +101,8 @@ void* malloc(size_t size)
     if (trace_enabled())
         // its generally bad idea to call I/O function from malloc
         // if they call malloc we will end up with an infinite recursion...
-        // with glibc we are lucky though
-        std::cerr << "malloc " << size << " " << p << "\n";
+        // this is why I use fprintf instead of std::cerr
+        fprintf(stderr, "malloc %zu %p\n", size, p);
 
     return p;
 }
@@ -114,7 +113,7 @@ void* calloc(size_t n, size_t size)
     void* p = internal_alloc(n * size);
 
     if (trace_enabled())
-        std::cerr << "calloc " << n << " " << size << " " << p << "\n";
+        fprintf(stderr, "calloc %zu %zu %p\n", n, size, p);
 
     return p;
 }
@@ -125,7 +124,7 @@ void free(void *ptr)
     internal_free(ptr);
 
     if (trace_enabled())
-        std::cerr << "free " << ptr << "\n";
+        fprintf(stderr, "free %p\n", ptr);
 }
 
 extern "C"
@@ -134,7 +133,7 @@ void* realloc(void *ptr, size_t size)
     void* p = internal_realloc(ptr, size);
 
     if (trace_enabled())
-        std::cerr << "realloc " << ptr << " " << size << " " << p << "\n";
+        fprintf(stderr, "realloc %p %zu %p\n", ptr, size, p);
 
     return p;
 }
