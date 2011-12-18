@@ -17,6 +17,7 @@ namespace
         void* start_address;
         size_t total_size;
         size_t data_size;
+        size_t alignment;
         size_t magic;
     };
 
@@ -74,6 +75,7 @@ void* malloc_intercept::internal_alloc(size_t size, size_t alignment)
     blk->start_address = ptr;
     blk->total_size    = total_size;
     blk->data_size     = size;
+    blk->alignment     = alignment;
     blk->magic         = BLOCK_MAGIC;
 
     return (char*)ptr + data_start_offset;
@@ -94,11 +96,13 @@ void* malloc_intercept::internal_realloc(void *ptr, size_t size)
         return internal_alloc(size, DEFAULT_ALIGNMENT);
 
     // I don't know what size of alignment to use when realloc is called on block allocated with posix_memalign
-    void* new_data = internal_alloc(size, DEFAULT_ALIGNMENT);
-    if (new_data == NULL)
-        return NULL;
+    // Let's just preserve old alignment
 
     block_header* old_blk = block_by_ptr(ptr);
+
+    void* new_data = internal_alloc(size, old_blk->alignment);
+    if (new_data == NULL)
+        return NULL;
 
     memcpy(new_data, ptr, std::min(size, old_blk->data_size));
 
