@@ -2,7 +2,7 @@
 // compile (release): g++ --shared -fPIC -O2 -o malloc-intercept.so malloc-intercept.cpp internals.cpp
 // run (trace):       LD_PRELOAD=./malloc-intercept.so kreversi
 // run (no trace):    LD_PRELOAD=./malloc-intercept.so MALLOC_INTERCEPT_NO_TRACE=1 kreversi
-// view symbols:      objdump -t --demangle malloc-intercept.so
+// view symbols:      objdump -T --demangle malloc-intercept.so
 
 #include <cerrno>
 #include <cstdio>
