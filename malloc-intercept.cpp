@@ -21,7 +21,7 @@ namespace
         {
             if (inside_malloc)
             {
-                print("recuirsive call\n");
+                print("recursive call\n");
                 std::abort();
             }
             
