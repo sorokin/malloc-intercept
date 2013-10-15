@@ -34,7 +34,6 @@ namespace malloc_intercept
         if (!trace_enabled())
             return;
         
-       
         print(objs...);
     }
 }
