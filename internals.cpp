@@ -1,7 +1,7 @@
 #include "internals.h"
+#include "tracing.h"
 
 #include <cstring>
-#include <cstdio>
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -33,7 +33,7 @@ namespace
 
         if (blk->magic != BLOCK_MAGIC)
         {
-            fprintf(stderr, "bad magic in block %p\n", p);
+            malloc_intercept::print("bad magic in block ", p, "\n");
             std::abort();
         }
 
