@@ -33,7 +33,15 @@ namespace
 
         if (blk->magic != BLOCK_MAGIC)
         {
-            malloc_intercept::print("bad magic in block ", p, "\n");
+            malloc_intercept::print("Bad magic in block ", p, ".\n");
+            malloc_intercept::print("This error can be caused by several things:\n");
+            malloc_intercept::print("  1. The running program attempts to free the memory that was not previously\n");
+            malloc_intercept::print("     allocated by malloc-family of functions. One can use valgrind to check\n");
+            malloc_intercept::print("     if the program contains any memory-related errors.\n");
+            malloc_intercept::print("  2. The program uses some allocation functions we don't know about and we\n");
+            malloc_intercept::print("     don't intercept.\n");
+            malloc_intercept::print("  3. (unlikely) The program corrupted the our magic value located before the\n");
+            malloc_intercept::print("     allocated block.\n");
             std::abort();
         }
 
