@@ -105,6 +105,20 @@ int posix_memalign(void** memptr, size_t alignment, size_t size)
 }
 
 extern "C"
+void *aligned_alloc(size_t alignment, size_t size)
+{
+    recuirsion_guard rg;
+
+    if (!is_valid_alignment(alignment))
+        return nullptr;
+
+    void *p = internal_alloc(size, alignment);
+    trace("aligned_alloc ", size, " ", alignment, " ", p, "\n");
+
+    return p;
+}
+
+extern "C"
 void *valloc(size_t size)
 {
     recuirsion_guard rg;
